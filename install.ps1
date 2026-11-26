@@ -1,10 +1,10 @@
-# Install the Skills in this repository (branch-flow, agents-layout) for every agent tool on this machine (Windows).
+# Install the agent-conventions Skill for every agent tool on this machine (Windows).
 #   irm https://raw.githubusercontent.com/zhoushoujianwork/agent-conventions/main/install.ps1 | iex
 # Real copies go to ~\.agents\skills (read directly by Codex, Gemini CLI, Antigravity CLI); Claude Code and
 # Antigravity get copies in their own skill folders. No symlinks on Windows.
 param([string]$Ref = "main", [switch]$Uninstall)
 $ErrorActionPreference = "Stop"
-$Repo = "zhoushoujianwork/agent-conventions"; $Mark = ".branch-flow"; $Skills = @("branch-flow", "agents-layout")
+$Repo = "zhoushoujianwork/agent-conventions"; $Mark = ".branch-flow"; $Skills = @("agent-conventions", "branch-flow", "agents-layout")  # the last two are v0.1/v0.2 names
 $HomeDir = if ($env:BRANCH_FLOW_HOME) { $env:BRANCH_FLOW_HOME } else { $HOME }
 $Shared = Join-Path $HomeDir ".agents\skills"
 $Targets = @(
@@ -32,7 +32,7 @@ try {
   Invoke-WebRequest "https://github.com/$Repo/archive/$Ref.zip" -OutFile $Zip -UseBasicParsing
   Expand-Archive $Zip $Tmp
   $Src = Get-ChildItem $Tmp -Directory -Recurse -Depth 1 | Where-Object { $_.Name -eq "skills" } | Select-Object -First 1
-  if (-not $Src -or -not (Test-Path (Join-Path $Src.FullName "branch-flow\SKILL.md"))) { throw "download did not contain skills/" }
+  if (-not $Src -or -not (Test-Path (Join-Path $Src.FullName "agent-conventions\SKILL.md"))) { throw "download did not contain skills/" }
   foreach ($dir in Get-ChildItem $Src.FullName -Directory) {
     $s = $dir.Name; if (-not (Test-Path (Join-Path $dir.FullName "SKILL.md"))) { continue }
     $Real = Join-Path $Shared $s
@@ -52,5 +52,10 @@ try {
       Copy-Item -Recurse $Real $d
       "installed $($t.Id): $d"
     }
+  }
+  foreach ($old in @("branch-flow", "agents-layout")) {
+    foreach ($t in $Targets) { Drop (Join-Path $t.Dir $old) "old $($t.Id)" }
+    foreach ($r in $Retired) { Drop (Join-Path $r $old) "retired" }
+    Drop (Join-Path $Shared $old) "old agents"
   }
 } finally { Remove-Item -Recurse -Force $Tmp }

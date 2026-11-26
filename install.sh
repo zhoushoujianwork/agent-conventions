@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the Skills in this repository (branch-flow, agents-layout) for every agent tool on this machine.
+# Install the agent-conventions Skill for every agent tool on this machine.
 #
 #   curl -fsSL https://raw.githubusercontent.com/zhoushoujianwork/agent-conventions/main/install.sh | bash
 #   ./install.sh [--ref <tag|branch>] [--only claude,agy] [--copy] [--uninstall] [--dry-run]
@@ -10,6 +10,7 @@
 set -euo pipefail
 
 REPO="zhoushoujianwork/agent-conventions" MARK=".branch-flow"
+OLD="branch-flow agents-layout"   # v0.1/v0.2 Skill names, merged into agent-conventions in v0.3.0
 ref="main" only="" copy=0 uninstall=0 dry=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -45,7 +46,7 @@ drop_retired() {  # $1 = skill name; removes our copy or a link (ours, or dangli
 }
 
 if [ "$uninstall" = 1 ]; then
-  for skill in branch-flow agents-layout; do
+  for skill in agent-conventions $OLD; do
     printf '%s\n' "$targets" | while IFS='|' read -r id dir _; do
       wanted "$id" || continue
       if ours "$dir/$skill" || { [ -L "$dir/$skill" ] && [ ! -e "$dir/$skill" ]; }; then run rm -rf "$dir/$skill"; echo "removed  $id: $dir/$skill"; fi
@@ -58,12 +59,12 @@ fi
 
 # Source: this checkout when run from it, otherwise the requested ref from GitHub.
 here="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd -P || true)"
-if [ -n "$here" ] && [ -f "$here/skills/branch-flow/SKILL.md" ]; then src="$here/skills"
+if [ -n "$here" ] && [ -f "$here/skills/agent-conventions/SKILL.md" ]; then src="$here/skills"
 else
   tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
   curl -fsSL "https://github.com/$REPO/archive/$ref.tar.gz" | tar -xz -C "$tmp"
   src="$(find "$tmp" -maxdepth 2 -type d -name skills | head -1)"
-  [ -n "$src" ] && [ -f "$src/branch-flow/SKILL.md" ] || { echo "download did not contain skills/" >&2; exit 1; }
+  [ -n "$src" ] && [ -f "$src/agent-conventions/SKILL.md" ] || { echo "download did not contain skills/" >&2; exit 1; }
 fi
 
 for path in "$src"/*/; do
@@ -93,4 +94,13 @@ for path in "$src"/*/; do
     if [ "$copy" = 1 ]; then run cp -R "$real" "$dest"; else run ln -s "$real" "$dest"; fi
     echo "installed $id: $dest"
   done
+done
+
+# Remove our installs of the old Skill names everywhere.
+for skill in $OLD; do
+  printf '%s\n' "$targets" | while IFS='|' read -r id dir _; do
+    if ours "$dir/$skill" || { [ -L "$dir/$skill" ] && [ ! -e "$dir/$skill" ]; }; then run rm -rf "$dir/$skill"; echo "removed  old $id: $dir/$skill"; fi
+  done
+  drop_retired "$skill"
+  if ours "$shared/$skill"; then run rm -rf "$shared/$skill"; echo "removed  old agents: $shared/$skill"; fi
 done
