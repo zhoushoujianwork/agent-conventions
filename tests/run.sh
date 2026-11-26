@@ -52,7 +52,7 @@ check "old codex link retired" "$out" "removed  retired: .*/.codex/skills/branch
 [ -x "$h/.agents/skills/agents-layout/scripts/agents-layout.sh" ] && [ -x "$h/.agents/skills/branch-flow/scripts/wt-status.sh" ] && echo "ok   - scripts executable" || { echo "FAIL - scripts not executable"; fail=1; }
 h2="$tmp/home2"; mkdir -p "$h2/.claude/skills/branch-flow"; echo mine > "$h2/.claude/skills/branch-flow/SKILL.md"
 out="$(BRANCH_FLOW_HOME="$h2" bash "$root/install.sh" --only claude)"
-check "foreign folder left alone" "$out" "skipped +claude: .*branch-flow exists and was not installed by branch-flow"
+check "foreign folder left alone" "$out" "skipped +claude: .*branch-flow exists and was not installed by agent-conventions"
 [ "$(cat "$h2/.claude/skills/branch-flow/SKILL.md")" = mine ] && echo "ok   - foreign content intact" || { echo "FAIL - foreign content changed"; fail=1; }
 out="$(BRANCH_FLOW_HOME="$h" bash "$root/install.sh" --copy --only claude)"
 [ -d "$h/.claude/skills/branch-flow" ] && [ ! -L "$h/.claude/skills/branch-flow" ] && echo "ok   - --copy makes a real copy" || { echo "FAIL - --copy"; fail=1; }

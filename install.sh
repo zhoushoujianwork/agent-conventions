@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install the Skills in this repository (branch-flow, agents-layout) for every agent tool on this machine.
 #
-#   curl -fsSL https://raw.githubusercontent.com/zhoushoujianwork/branch-flow/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/zhoushoujianwork/agent-conventions/main/install.sh | bash
 #   ./install.sh [--ref <tag|branch>] [--only claude,agy] [--copy] [--uninstall] [--dry-run]
 #
 # The real copies live in ~/.agents/skills/<skill>, which Codex, Gemini CLI and Antigravity's CLI read natively.
@@ -9,7 +9,7 @@
 # get symlinks — copies with --copy or on Windows. Tools that are not installed are skipped.
 set -euo pipefail
 
-REPO="zhoushoujianwork/branch-flow" MARK=".branch-flow"
+REPO="zhoushoujianwork/agent-conventions" MARK=".branch-flow"
 ref="main" only="" copy=0 uninstall=0 dry=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -71,7 +71,7 @@ for path in "$src"/*/; do
   version="$(sed -n 's/^  version: "\(.*\)"/\1/p' "$path/SKILL.md" | head -1)"
   real="$shared/$skill"
   # Replace only a previous install of ours, never someone else's folder.
-  if [ -e "$real" ] && ! ours "$real"; then echo "refusing to overwrite $real: not installed by branch-flow" >&2; exit 1; fi
+  if [ -e "$real" ] && ! ours "$real"; then echo "refusing to overwrite $real: not installed by agent-conventions" >&2; exit 1; fi
   run mkdir -p "$shared"
   run rm -rf "$real.new"
   run cp -R "${path%/}" "$real.new"
@@ -86,7 +86,7 @@ for path in "$src"/*/; do
     [ -d "$marker" ] || { echo "skipped  $id: $marker not found"; continue; }
     dest="$dir/$skill"
     if { [ -e "$dest" ] || [ -L "$dest" ]; } && ! ours "$dest" && [ -e "$dest" ]; then
-      echo "skipped  $id: $dest exists and was not installed by branch-flow"; continue
+      echo "skipped  $id: $dest exists and was not installed by agent-conventions"; continue
     fi
     run mkdir -p "$dir"
     run rm -rf "$dest"

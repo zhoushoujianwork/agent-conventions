@@ -1,10 +1,10 @@
 # Install the Skills in this repository (branch-flow, agents-layout) for every agent tool on this machine (Windows).
-#   irm https://raw.githubusercontent.com/zhoushoujianwork/branch-flow/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/zhoushoujianwork/agent-conventions/main/install.ps1 | iex
 # Real copies go to ~\.agents\skills (read directly by Codex, Gemini CLI, Antigravity CLI); Claude Code and
 # Antigravity get copies in their own skill folders. No symlinks on Windows.
 param([string]$Ref = "main", [switch]$Uninstall)
 $ErrorActionPreference = "Stop"
-$Repo = "zhoushoujianwork/branch-flow"; $Mark = ".branch-flow"; $Skills = @("branch-flow", "agents-layout")
+$Repo = "zhoushoujianwork/agent-conventions"; $Mark = ".branch-flow"; $Skills = @("branch-flow", "agents-layout")
 $HomeDir = if ($env:BRANCH_FLOW_HOME) { $env:BRANCH_FLOW_HOME } else { $HOME }
 $Shared = Join-Path $HomeDir ".agents\skills"
 $Targets = @(
@@ -25,7 +25,7 @@ if ($Uninstall) {
   return
 }
 
-$Tmp = Join-Path ([IO.Path]::GetTempPath()) ("branch-flow-" + [Guid]::NewGuid())
+$Tmp = Join-Path ([IO.Path]::GetTempPath()) ("agent-conventions-" + [Guid]::NewGuid())
 New-Item -ItemType Directory $Tmp | Out-Null
 try {
   $Zip = Join-Path $Tmp "src.zip"
@@ -36,7 +36,7 @@ try {
   foreach ($dir in Get-ChildItem $Src.FullName -Directory) {
     $s = $dir.Name; if (-not (Test-Path (Join-Path $dir.FullName "SKILL.md"))) { continue }
     $Real = Join-Path $Shared $s
-    if ((Test-Path $Real) -and -not (Ours $Real)) { throw "refusing to overwrite ${Real}: not installed by branch-flow" }
+    if ((Test-Path $Real) -and -not (Ours $Real)) { throw "refusing to overwrite ${Real}: not installed by agent-conventions" }
     if (Test-Path $Real) { Remove-Item -Recurse -Force $Real }
     New-Item -ItemType Directory -Force $Shared | Out-Null
     Copy-Item -Recurse $dir.FullName $Real
@@ -46,7 +46,7 @@ try {
     foreach ($t in $Targets) {
       if (-not (Test-Path $t.Marker)) { "skipped  $($t.Id): $($t.Marker) not found"; continue }
       $d = Join-Path $t.Dir $s
-      if ((Test-Path $d) -and -not (Ours $d)) { "skipped  $($t.Id): $d exists and was not installed by branch-flow"; continue }
+      if ((Test-Path $d) -and -not (Ours $d)) { "skipped  $($t.Id): $d exists and was not installed by agent-conventions"; continue }
       if (Test-Path $d) { Remove-Item -Recurse -Force $d }
       New-Item -ItemType Directory -Force $t.Dir | Out-Null
       Copy-Item -Recurse $Real $d
