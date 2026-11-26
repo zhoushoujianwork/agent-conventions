@@ -1,8 +1,8 @@
 ---
 name: branch-flow
-description: Simple Git conventions for one person working with several AI agents — main/dev/task-branch roles, one worktree per task, merge into dev, clean up worktrees and merged branches right away, release only on request (tag + verified assets). Use whenever you start, finish, merge, clean up or release work in a Git repository, or when asked what is left over.
+description: Simple Git conventions for one person working with several AI agents — main/dev/task-branch roles, one worktree per task, merge into dev, clean up worktrees and merged branches right away, release only on request (tag + verified assets). Use whenever you start, finish, merge, clean up or release work in a Git repository, when asked what is left over, or when the user says clean, 收尾 or wrap up.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # branch-flow
@@ -71,6 +71,18 @@ No `dev` branch in the repository? Use the default branch in its place. Do not i
 - No `git reset --hard`, no force push, no rewriting shared history unless the user asks for exactly that.
 - The main checkout is for integration, builds and installs only. Keep it on `dev`, clean, not detached, and tracking the remote that is actually maintained.
 - Builds and installs that others will use come from the main checkout's clean, committed `dev` (or `main` for releases), never from a task worktree.
+
+## "clean" / "收尾" / "wrap up"
+
+When the user says one of these in a repository, run both read-only checks and report them together:
+
+```bash
+~/.agents/skills/branch-flow/scripts/wt-status.sh -C <repo> --fetch       # leftover worktrees and branches
+~/.agents/skills/agents-layout/scripts/agents-layout.sh -C <repo>          # AGENTS.md / skills links (agents-layout Skill)
+```
+
+Then remove only what passes every check and is yours, and fix only `MISSING` / `DUPLICATE` layout items (`--apply`).
+Make those fixes on a task branch. List everything else for the user.
 
 ## Checklist before saying "done"
 

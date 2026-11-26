@@ -1,22 +1,27 @@
-# Install the branch-flow Skill for every agent tool found on this machine (Windows).
+# Install the Skills in this repository (branch-flow, agents-layout) for every agent tool on this machine (Windows).
 #   irm https://raw.githubusercontent.com/zhoushoujianwork/branch-flow/main/install.ps1 | iex
-# Copies (no symlinks) into ~\.agents\skills and each tool's skill folder that exists.
+# Real copies go to ~\.agents\skills (read directly by Codex, Gemini CLI, Antigravity CLI); Claude Code and
+# Antigravity get copies in their own skill folders. No symlinks on Windows.
 param([string]$Ref = "main", [switch]$Uninstall)
 $ErrorActionPreference = "Stop"
-$Name = "branch-flow"; $Repo = "zhoushoujianwork/branch-flow"
+$Repo = "zhoushoujianwork/branch-flow"; $Mark = ".branch-flow"; $Skills = @("branch-flow", "agents-layout")
 $HomeDir = if ($env:BRANCH_FLOW_HOME) { $env:BRANCH_FLOW_HOME } else { $HOME }
-$Canonical = Join-Path $HomeDir ".agents\skills\$Name"
+$Shared = Join-Path $HomeDir ".agents\skills"
 $Targets = @(
-  @{ Id = "claude"; Dir = Join-Path $HomeDir ".claude\skills"; Marker = Join-Path $HomeDir ".claude" },
-  @{ Id = "codex";  Dir = Join-Path $HomeDir ".codex\skills";  Marker = Join-Path $HomeDir ".codex" },
-  @{ Id = "agy";    Dir = Join-Path $HomeDir ".gemini\antigravity\skills"; Marker = Join-Path $HomeDir ".gemini\antigravity" },
-  @{ Id = "gemini"; Dir = Join-Path $HomeDir ".gemini\skills"; Marker = Join-Path $HomeDir ".gemini" }
+  @{ Id = "claude";     Dir = Join-Path $HomeDir ".claude\skills";              Marker = Join-Path $HomeDir ".claude" },
+  @{ Id = "agy";        Dir = Join-Path $HomeDir ".gemini\config\skills";       Marker = Join-Path $HomeDir ".gemini\config" },
+  @{ Id = "agy-legacy"; Dir = Join-Path $HomeDir ".gemini\antigravity\skills";  Marker = Join-Path $HomeDir ".gemini\antigravity" }
 )
-function Owned($Path) { Test-Path (Join-Path $Path ".branch-flow") }
+$Retired = @((Join-Path $HomeDir ".codex\skills"), (Join-Path $HomeDir ".gemini\skills"))
+function Ours($Path) { Test-Path (Join-Path $Path $Mark) }
+function Drop($Path, $Label) { if (Ours $Path) { Remove-Item -Recurse -Force $Path; "removed  ${Label}: $Path" } }
 
 if ($Uninstall) {
-  foreach ($t in $Targets) { $d = Join-Path $t.Dir $Name; if (Owned $d) { Remove-Item -Recurse -Force $d; "removed  $($t.Id): $d" } }
-  if (Owned $Canonical) { Remove-Item -Recurse -Force $Canonical; "removed  agents: $Canonical" }
+  foreach ($s in $Skills) {
+    foreach ($t in $Targets) { Drop (Join-Path $t.Dir $s) $t.Id }
+    foreach ($r in $Retired) { Drop (Join-Path $r $s) "retired" }
+    Drop (Join-Path $Shared $s) "agents"
+  }
   return
 }
 
@@ -26,21 +31,26 @@ try {
   $Zip = Join-Path $Tmp "src.zip"
   Invoke-WebRequest "https://github.com/$Repo/archive/$Ref.zip" -OutFile $Zip -UseBasicParsing
   Expand-Archive $Zip $Tmp
-  $Src = Get-ChildItem $Tmp -Directory -Recurse | Where-Object { $_.FullName -like "*\skills\$Name" } | Select-Object -First 1
-  if (-not $Src -or -not (Test-Path (Join-Path $Src.FullName "SKILL.md"))) { throw "download did not contain skills/$Name" }
-  if ((Test-Path $Canonical) -and -not (Owned $Canonical)) { throw "refusing to overwrite $Canonical: it was not installed by branch-flow" }
-  if (Test-Path $Canonical) { Remove-Item -Recurse -Force $Canonical }
-  New-Item -ItemType Directory -Force (Split-Path $Canonical) | Out-Null
-  Copy-Item -Recurse $Src.FullName $Canonical
-  Set-Content (Join-Path $Canonical ".branch-flow") $Ref
-  "installed agents: $Canonical"
-  foreach ($t in $Targets) {
-    if (-not (Test-Path $t.Marker)) { "skipped  $($t.Id): $($t.Marker) not found"; continue }
-    $d = Join-Path $t.Dir $Name
-    if ((Test-Path $d) -and -not (Owned $d)) { "skipped  $($t.Id): $d exists and was not installed by branch-flow"; continue }
-    if (Test-Path $d) { Remove-Item -Recurse -Force $d }
-    New-Item -ItemType Directory -Force $t.Dir | Out-Null
-    Copy-Item -Recurse $Canonical $d
-    "installed $($t.Id): $d"
+  $Src = Get-ChildItem $Tmp -Directory -Recurse -Depth 1 | Where-Object { $_.Name -eq "skills" } | Select-Object -First 1
+  if (-not $Src -or -not (Test-Path (Join-Path $Src.FullName "branch-flow\SKILL.md"))) { throw "download did not contain skills/" }
+  foreach ($dir in Get-ChildItem $Src.FullName -Directory) {
+    $s = $dir.Name; if (-not (Test-Path (Join-Path $dir.FullName "SKILL.md"))) { continue }
+    $Real = Join-Path $Shared $s
+    if ((Test-Path $Real) -and -not (Ours $Real)) { throw "refusing to overwrite ${Real}: not installed by branch-flow" }
+    if (Test-Path $Real) { Remove-Item -Recurse -Force $Real }
+    New-Item -ItemType Directory -Force $Shared | Out-Null
+    Copy-Item -Recurse $dir.FullName $Real
+    Set-Content (Join-Path $Real $Mark) $Ref
+    "installed agents: $Real"
+    foreach ($r in $Retired) { Drop (Join-Path $r $s) "retired" }
+    foreach ($t in $Targets) {
+      if (-not (Test-Path $t.Marker)) { "skipped  $($t.Id): $($t.Marker) not found"; continue }
+      $d = Join-Path $t.Dir $s
+      if ((Test-Path $d) -and -not (Ours $d)) { "skipped  $($t.Id): $d exists and was not installed by branch-flow"; continue }
+      if (Test-Path $d) { Remove-Item -Recurse -Force $d }
+      New-Item -ItemType Directory -Force $t.Dir | Out-Null
+      Copy-Item -Recurse $Real $d
+      "installed $($t.Id): $d"
+    }
   }
 } finally { Remove-Item -Recurse -Force $Tmp }
