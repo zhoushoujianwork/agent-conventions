@@ -1,4 +1,6 @@
-# branch-flow
+# agent-conventions
+
+_Formerly `branch-flow`; old GitHub URLs redirect here._
 
 Two tiny Agent Skills for **one person working with several AI coding agents** (Claude Code, Codex,
 Antigravity, Gemini CLI …) in the same repositories.
@@ -23,13 +25,13 @@ left over and what is out of place. A repository's own `AGENTS.md` overrides the
 macOS / Linux:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zhoushoujianwork/branch-flow/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/zhoushoujianwork/agent-conventions/main/install.sh | bash
 ```
 
 Windows (PowerShell):
 
 ```powershell
-irm https://raw.githubusercontent.com/zhoushoujianwork/branch-flow/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/zhoushoujianwork/agent-conventions/main/install.ps1 | iex
 ```
 
 The real copies go to `~/.agents/skills/<skill>`. Tools that need their own folder get a link (copies on Windows):
